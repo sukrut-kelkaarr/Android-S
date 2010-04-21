@@ -99,6 +99,7 @@ class Options(object):
     self.logfile = None
     self.host_tools = {}
 
+    self.override_device = 'auto'
 
 OPTIONS = Options()
 
@@ -427,7 +428,10 @@ class BuildInfo(object):
           "system_other"] = self._partition_fingerprints["system"]
 
     # These two should be computed only after setting self._oem_props.
-    self._device = self.GetOemProperty("ro.product.device")
+    if OPTIONS.override_device == "auto":
+      self._device = self.GetOemProperty("ro.product.device")
+    else:
+      self._device = OPTIONS.override_device
     self._fingerprint = self.CalculateFingerprint()
     check_fingerprint(self._fingerprint)
 
@@ -2400,6 +2404,9 @@ Global options
 
   --logfile <file>
       Put verbose logs to specified file (regardless of --verbose option.)
+
+  --override_device <device>
+      Override device-specific asserts. Can be a comma-separated list.
 """
 
 
@@ -2428,7 +2435,7 @@ def ParseOptions(argv,
          "verity_signer_path=", "verity_signer_args=", "device_specific=",
          "extra=", "logfile=", "aftl_tool_path=", "aftl_server=",
          "aftl_key_path=", "aftl_manufacturer_key_path=",
-         "aftl_signer_helper="] + list(extra_long_opts))
+         "aftl_signer_helper=", "override_device"] + list(extra_long_opts))
   except getopt.GetoptError as err:
     Usage(docstring)
     print("**", str(err), "**")
@@ -2483,6 +2490,8 @@ def ParseOptions(argv,
       OPTIONS.extras[key] = value
     elif o in ("--logfile",):
       OPTIONS.logfile = a
+    elif o in ("--override_device"):
+      OPTIONS.override_device = a
     else:
       if extra_option_handler is None or not extra_option_handler(o, a):
         assert False, "unknown option \"%s\"" % (o,)
